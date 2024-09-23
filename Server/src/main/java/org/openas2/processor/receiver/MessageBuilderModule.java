@@ -4,6 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openas2.OpenAS2Exception;
+import org.openas2.FilledZeroException;
 import org.openas2.Session;
 import org.openas2.WrappedException;
 import org.openas2.lib.util.MimeUtil;
@@ -39,6 +40,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.StandardCharsets;
 
 public abstract class MessageBuilderModule extends BaseReceiverModule {
 
@@ -74,7 +76,9 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
      * @throws OpenAS2Exception
      * @throws FileNotFoundException
      */
-    protected Message processDocument(File fileToSend, String filename) throws OpenAS2Exception, FileNotFoundException {       
+    protected Message processDocument(File fileToSend, String filename) throws OpenAS2Exception, FileNotFoundException {            
+        CheckOnZeroDataFile(fileToSend);
+
         Message msg = buildBaseMessage(filename);
         String fileSizeThresholdStr = msg.getPartnership().getAttribute(Partnership.PA_SPLIT_FILE_THRESHOLD_SIZE_IN_BYTES);
         long fileSizeThreshold = 0;
@@ -157,6 +161,7 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
     }
 
     protected Message processDocument(File pendingFile, Message msg) throws OpenAS2Exception, FileNotFoundException {
+        long fileSize = pendingFile.length();
         buildMessageData(msg, pendingFile, null);
         String customHeaderList = msg.getPartnership().getAttribute(Partnership.PA_CUSTOM_MIME_HEADER_NAMES_FROM_FILENAME);
         if (customHeaderList != null && customHeaderList.length() > 0) {
@@ -204,8 +209,10 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
                 }
             }
         }
+
+        // #SVA размер файла добавлен
         if (logger.isInfoEnabled()) {
-            logger.info("File assigned to message: " + pendingFile.getName() + msg.getLogMsgID());
+            logger.info("File (size = " + fileSize + " bytes) assigned to message: " + pendingFile.getName() + msg.getLogMsgID());
         }
 
         if (msg.getData() == null) {
@@ -320,6 +327,68 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
     }
 
     /**
+     * #SVA 21.09.2024
+     * Проверка содержимого файла на наличие нулевых байтов
+     * а то были неприятные случаи...
+     * @param CheckedFile - проверяемый файл
+     * @throws OpenAS2Exception
+     */
+    private void CheckOnZeroDataFile(File CheckedFile) throws OpenAS2Exception {
+        DataHandler dataHandler = new DataHandler(new FileDataSource(CheckedFile));
+        int maxAttempts = 3;
+        int currAttempt = 1;
+        int attemptDelay = 500;
+        boolean isAllZero = true;
+
+        while (currAttempt <= maxAttempts) {
+            try {          
+                InputStream is = dataHandler.getInputStream();  
+                byte [] lookupArr = new byte[10];
+                is.read(lookupArr);
+                for (byte val: lookupArr) {
+                    if (val != 0) {
+                        isAllZero = false;
+                        break;
+                    }
+                }
+                String s = new String(lookupArr, StandardCharsets.UTF_8);
+                logger.info("Input stream begin with: " + s + "; Attempt = " + currAttempt);
+                is.close();
+            } catch (IOException e) {
+                if (currAttempt <= maxAttempts) {
+                    logger.info("Input stream is bloked! Lets await...");
+                    try {
+                        Thread.sleep(attemptDelay);
+                    } catch (InterruptedException e1) {
+                        // TODO Auto-generated catch block
+                        e1.printStackTrace();
+                    }
+                    currAttempt = currAttempt + 1;
+                    continue;
+                } else {
+                    throw new OpenAS2Exception("Failed to get input stream of data source: " + e.getMessage(), e);
+                }
+            } 
+            if (isAllZero) {
+                currAttempt = currAttempt + 1;
+                try {
+                    Thread.sleep(attemptDelay);
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+            } else {
+                break;
+            }
+        }
+
+        if (isAllZero) {
+            throw new FilledZeroException("Input stream filled by zero bytes!");
+        }
+    }
+
+
+    /**
      * This method will minimise the memory usage when creating the MimeBodyPart
      * @param msg - the AS2 message structure that will be formulated into an AS2 HTTP message.
      * @param fileObject - a File object that will provide the file content
@@ -338,12 +407,14 @@ public abstract class MessageBuilderModule extends BaseReceiverModule {
      * @throws OpenAS2Exception
      */
     public void buildMessageData(Message msg, DataSource dataSource, String contentType) throws OpenAS2Exception {
+        DataHandler dataHandler = new DataHandler(dataSource);
+
         if (contentType == null) {
             contentType = getMessageContentType(msg);
         }
         MimeBodyPart body = new MimeBodyPart();
         try {
-            body.setDataHandler(new DataHandler(dataSource));
+            body.setDataHandler(dataHandler);
             body.setHeader(MimeUtil.MIME_CONTENT_TYPE_KEY, contentType);
         } catch (MessagingException e) {
             throw new OpenAS2Exception("Failed to set properties on mime body part: " + e.getMessage(), e);

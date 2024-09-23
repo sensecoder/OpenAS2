@@ -19,10 +19,11 @@ Checking dependencies against latest:
 `./mvnw versions:display-dependency-updates`
 
 Updating dependencies to latest:
+!!! Не нада этого делать !!!
 `./mvnw versions:use-latest-releases`
 
 Build a snapshot the following command should be used:
-`./mvnw versions:set -DnewVersion=2.12.0-SNAPSHOT`
+`./mvnw versions:set -DnewVersion=2.12.0-EME_EDI_HUB`
 
 Run unit tests:
 `./mvnw test`

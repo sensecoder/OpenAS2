@@ -53,18 +53,21 @@ public class AS2Util {
 
     public static String generateMessageID(Message msg, boolean isMDN) throws InvalidParameterException {
         String idFormat = null;
-        CompositeParameters params = new CompositeParameters(false).add("date", new DateParameters()).add("msg", new MessageParameters(msg)).add("rand", new RandomParameters());
+        CompositeParameters params = new CompositeParameters(false).add("date", new DateParameters())
+                .add("msg", new MessageParameters(msg)).add("rand", new RandomParameters());
         if (isMDN) {
             params.add("mdn", new MessageMDNParameters(msg.getMDN()));
             idFormat = msg.getPartnership().getAttributeOrProperty(Properties.AS2_MDN_MESSAGE_ID_FORMAT, null);
         }
         if (idFormat == null) {
-            idFormat = msg.getPartnership().getAttributeOrProperty(Properties.AS2_MESSAGE_ID_FORMAT, "<OPENAS2-$date.ddMMyyyyHHmmssZ$-$rand.UUID$@$msg.sender.as2_id$_$msg.receiver.as2_id$>");
+            idFormat = msg.getPartnership().getAttributeOrProperty(Properties.AS2_MESSAGE_ID_FORMAT,
+                    "<OPENAS2-$date.ddMMyyyyHHmmssZ$-$rand.UUID$@$msg.sender.as2_id$_$msg.receiver.as2_id$>");
         }
         String id = ParameterParser.parse(idFormat, params);
         // RFC822 requires enclosing message in <> but AS2 spec provides for this to be
         // overridden
-        String isEncap = msg.getPartnership().getAttributeOrProperty(Properties.AS2_MESSAGE_ID_ENCLOSE_IN_BRACKETS, "true");
+        String isEncap = msg.getPartnership().getAttributeOrProperty(Properties.AS2_MESSAGE_ID_ENCLOSE_IN_BRACKETS,
+                "true");
         if ("true".equalsIgnoreCase(isEncap)) {
             // Add the angle brackets if not already added
             if (!id.startsWith("<")) {
@@ -83,7 +86,8 @@ public class AS2Util {
         MimeBodyPart mainPart = mdn.getData();
         if (logger.isTraceEnabled() && "true".equalsIgnoreCase(System.getProperty("logRxdMdnMimeBodyParts", "false"))) {
             try {
-                logger.trace("Received MimeBodyPart for inbound MDN: " + msg.getLogMsgID() + "\n" + MimeUtil.toString(mainPart, true));
+                logger.trace("Received MimeBodyPart for inbound MDN: " + msg.getLogMsgID() + "\n"
+                        + MimeUtil.toString(mainPart, true));
             } catch (Exception e) {
                 logger.trace("Failed to log the MimeBodyPart as part of trace logging: " + e.getMessage());
             }
@@ -114,8 +118,10 @@ public class AS2Util {
 
                     for (int j = 0; j < reportCount; j++) {
                         reportPart = (MimeBodyPart) reportParts.getBodyPart(j);
-                        if (logger.isTraceEnabled() && "true".equalsIgnoreCase(System.getProperty("logRxdMdnMimeBodyParts", "false"))) {
-                            logger.trace("Report MimeBodyPart from Multipart for inbound MDN: " + msg.getLogMsgID() + "\n" + MimeUtil.toString(reportPart, true));
+                        if (logger.isTraceEnabled()
+                                && "true".equalsIgnoreCase(System.getProperty("logRxdMdnMimeBodyParts", "false"))) {
+                            logger.trace("Report MimeBodyPart from Multipart for inbound MDN: " + msg.getLogMsgID()
+                                    + "\n" + MimeUtil.toString(reportPart, true));
                         }
 
                         if (reportPart.isMimeType("text/plain")) {
@@ -123,16 +129,20 @@ public class AS2Util {
                         } else if (reportPart.isMimeType(AS2Standards.DISPOSITION_TYPE)) {
                             InternetHeaders headers = new InternetHeaders(reportPart.getInputStream());
                             mdn.setAttribute(AS2MessageMDN.MDNA_REPORTING_UA, headers.getHeader("Reporting-UA", ", "));
-                            mdn.setAttribute(AS2MessageMDN.MDNA_ORIG_RECIPIENT, headers.getHeader("Original-Recipient", ", "));
-                            mdn.setAttribute(AS2MessageMDN.MDNA_FINAL_RECIPIENT, headers.getHeader("Final-Recipient", ", "));
-                            mdn.setAttribute(AS2MessageMDN.MDNA_ORIG_MESSAGEID, headers.getHeader("Original-Message-ID", ", "));
+                            mdn.setAttribute(AS2MessageMDN.MDNA_ORIG_RECIPIENT,
+                                    headers.getHeader("Original-Recipient", ", "));
+                            mdn.setAttribute(AS2MessageMDN.MDNA_FINAL_RECIPIENT,
+                                    headers.getHeader("Final-Recipient", ", "));
+                            mdn.setAttribute(AS2MessageMDN.MDNA_ORIG_MESSAGEID,
+                                    headers.getHeader("Original-Message-ID", ", "));
                             mdn.setAttribute(AS2MessageMDN.MDNA_DISPOSITION, headers.getHeader("Disposition", ", "));
                             mdn.setAttribute(AS2MessageMDN.MDNA_MIC, headers.getHeader("Received-Content-MIC", ", "));
                         }
                     }
                 } else {
                     // No multipart/report so now what?
-                    logger.warn("MDN received from partner but did not contain a multipart/report section. " + msg.getLogMsgID());
+                    logger.warn("MDN received from partner but did not contain a multipart/report section. "
+                            + msg.getLogMsgID());
                 }
             }
         } catch (Exception e) {
@@ -140,7 +150,8 @@ public class AS2Util {
         }
     }
 
-    private static String getMimeBodyPartText(MimeBodyPart part, Charset charset) throws MessagingException, IOException {
+    private static String getMimeBodyPartText(MimeBodyPart part, Charset charset)
+            throws MessagingException, IOException {
         Object content = part.getContent();
 
         if (InputStream.class.isAssignableFrom(content.getClass())) {
@@ -159,7 +170,8 @@ public class AS2Util {
                 charset = Charset.forName(charsetFromContentType);
             } catch (Exception e) {
                 // Just warn and allow the default to go through
-                logger.warn("Received charset string that cannot be parsed: " + charsetFromContentType + ", MSG_ID=" + msg.getLogMsgID());
+                logger.warn("Received charset string that cannot be parsed: " + charsetFromContentType + ", MSG_ID="
+                        + msg.getLogMsgID());
             }
         }
 
@@ -192,12 +204,13 @@ public class AS2Util {
                 new DispositionType(disposition).validate();
             } catch (DispositionException de) {
                 if (logger.isWarnEnabled()) {
-                    logger.warn("Disposition error detected in MDN. Received disposition: " + disposition + msg.getLogMsgID(), de);
+                    logger.warn("Disposition error detected in MDN. Received disposition: " + disposition
+                            + msg.getLogMsgID(), de);
                 }
                 // Something wrong detected so flag it for later use
                 dispositionHasWarning = true;
                 de.setText(msg.getMDN().getText());
-    
+
                 if ((de.getDisposition() != null) && de.getDisposition().isWarning()) {
                     // Do not throw error in this case ... just log it
                     de.addSource(OpenAS2Exception.SOURCE_MESSAGE, msg);
@@ -275,7 +288,12 @@ public class AS2Util {
                  * RFC 6362 specifies that the sent attachments should be considered invalid and
                  * retransmitted
                  */
-                String errmsg = "MIC algorithm returned by partner is not the same as the algorithm requested but must be the same per RFC4130 section 7.4.3. Original MIC alg: " + cMicAlg + " ::: returned MIC alg: " + rMicAlg + "\n        Ensure that Partner supports the requested algorithm and the \"" + Partnership.PA_AS2_MDN_OPTIONS + "\" attribute for the outbound partnership uses the same algorithm as the \" +" + Partnership.PA_SIGNATURE_ALGORITHM + "\" attribute.";
+                String errmsg = "MIC algorithm returned by partner is not the same as the algorithm requested but must be the same per RFC4130 section 7.4.3. Original MIC alg: "
+                        + cMicAlg + " ::: returned MIC alg: " + rMicAlg
+                        + "\n        Ensure that Partner supports the requested algorithm and the \""
+                        + Partnership.PA_AS2_MDN_OPTIONS
+                        + "\" attribute for the outbound partnership uses the same algorithm as the \" +"
+                        + Partnership.PA_SIGNATURE_ALGORITHM + "\" attribute.";
                 throw new OpenAS2Exception(errmsg + " Forcing Resend");
             }
         }
@@ -300,12 +318,15 @@ public class AS2Util {
      * options map. If the passed in retry count is null or invalid it will fall
      * back to a system default
      */
-    public static boolean resend(Session session, Class<?> sourceClass, String how, Message msg, OpenAS2Exception cause, boolean useOriginalMsgObject, boolean keepOriginalData) throws OpenAS2Exception {
+    public static boolean resend(Session session, Class<?> sourceClass, String how, Message msg, OpenAS2Exception cause,
+            boolean useOriginalMsgObject, boolean keepOriginalData) throws OpenAS2Exception {
         Log logger = LogFactory.getLog(AS2Util.class.getSimpleName());
-        int retries = Integer.parseInt((String)msg.getOption(ResenderModule.OPTION_RETRIES));
+        int retries = Integer.parseInt((String) msg.getOption(ResenderModule.OPTION_RETRIES));
         int maxRetryCount = getMaxResendCount(session, msg);
         if (logger.isDebugEnabled()) {
-            logger.debug("RESEND requested. Retries: " + retries + "Max retries: " + maxRetryCount + "\n        Message file from passed in object: " + msg.getAttribute(FileAttribute.MA_PENDINGFILE) + msg.getLogMsgID());
+            logger.debug("RESEND requested. Retries: " + retries + "Max retries: " + maxRetryCount
+                    + "\n        Message file from passed in object: " + msg.getAttribute(FileAttribute.MA_PENDINGFILE)
+                    + msg.getLogMsgID());
         }
         if (maxRetryCount > -1) {
             // Have to resend some fixed number of times so check if we are done
@@ -333,14 +354,17 @@ public class AS2Util {
                 try {
                     pifois = new ObjectInputStream(new FileInputStream(new File(pendingMsgObjFileName)));
                 } catch (FileNotFoundException e) {
-                    throw new OpenAS2Exception("Could not retrieve pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
+                    throw new OpenAS2Exception(
+                            "Could not retrieve pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
                 } catch (IOException e) {
-                    throw new OpenAS2Exception("Could not open pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
+                    throw new OpenAS2Exception(
+                            "Could not open pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
                 }
                 try {
                     originalMsg = (Message) pifois.readObject();
                 } catch (Exception e) {
-                    throw new OpenAS2Exception("Cannot retrieve original message object for resend: " + org.openas2.logging.Log.getExceptionMsg(e));
+                    throw new OpenAS2Exception("Cannot retrieve original message object for resend: "
+                            + org.openas2.logging.Log.getExceptionMsg(e));
                 }
             } finally {
                 try {
@@ -360,7 +384,10 @@ public class AS2Util {
                 originalMsg.setOption(ResenderModule.OPTION_RETRIES, "" + retries);
             }
             if (logger.isTraceEnabled()) {
-                logger.trace("Message file extracted from passed in object: " + msg.getAttribute(FileAttribute.MA_PENDINGFILE) + "\n        Message file extracted from original object: " + originalMsg.getAttribute(FileAttribute.MA_PENDINGFILE) + msg.getLogMsgID());
+                logger.trace("Message file extracted from passed in object: "
+                        + msg.getAttribute(FileAttribute.MA_PENDINGFILE)
+                        + "\n        Message file extracted from original object: "
+                        + originalMsg.getAttribute(FileAttribute.MA_PENDINGFILE) + msg.getLogMsgID());
             }
             msg = originalMsg;
         }
@@ -369,7 +396,8 @@ public class AS2Util {
         // the same message ID
         msg.setOption("STATE", Message.MSG_STATE_SEND_FAIL_RESEND_QUEUED);
         msg.trackMsgState(session);
-        boolean requiresNewMessageId = "true".equalsIgnoreCase(msg.getPartnership().getAttributeOrProperty(Partnership.PA_RESEND_REQUIRES_NEW_MESSAGE_ID, "true"));
+        boolean requiresNewMessageId = "true".equalsIgnoreCase(
+                msg.getPartnership().getAttributeOrProperty(Partnership.PA_RESEND_REQUIRES_NEW_MESSAGE_ID, "true"));
 
         if (requiresNewMessageId) {
             /**
@@ -388,23 +416,28 @@ public class AS2Util {
             String newMsgId = msg.generateMessageID();
             // Set new Id in Message object so we can generate new file name
             msg.setMessageID(newMsgId);
-            // msg.setHeader("Original-Message-Id", oldMsgId); // Not sure about this so leave out for now
+            // msg.setHeader("Original-Message-Id", oldMsgId); // Not sure about this so
+            // leave out for now
             String newPendingInfoFileName = buildPendingFileName(msg, session.getProcessor(), "pendingmdninfo");
             if (logger.isDebugEnabled()) {
-                logger.debug("" + "\n        Old Msg Id: " + oldMsgId + "\n        Old Info File: " + oldPendingInfoFileName + "\n        New Info File: " + newPendingInfoFileName + msg.getLogMsgID());
+                logger.debug(
+                        "" + "\n        Old Msg Id: " + oldMsgId + "\n        Old Info File: " + oldPendingInfoFileName
+                                + "\n        New Info File: " + newPendingInfoFileName + msg.getLogMsgID());
             }
             // Update the pending file to new name
             File oldPendInfFile = new File(oldPendingInfoFileName);
             File newPendInfFile = new File(newPendingInfoFileName);
             if (logger.isTraceEnabled()) {
-                logger.trace("Attempting to rename pending info file : " + oldPendInfFile.getName() + " :::: New name: " + newPendInfFile.getName() + msg.getLogMsgID());
+                logger.trace("Attempting to rename pending info file : " + oldPendInfFile.getName() + " :::: New name: "
+                        + newPendInfFile.getName() + msg.getLogMsgID());
             }
             try {
                 newPendInfFile = IOUtil.moveFile(oldPendInfFile, newPendInfFile, false);
                 // Update the name of the file in the message object
                 msg.setAttribute(FileAttribute.MA_PENDINGINFO, newPendingInfoFileName);
                 if (logger.isInfoEnabled()) {
-                    logger.info("Renamed pending info file : " + oldPendInfFile.getName() + " :::: New name: " + newPendInfFile.getName() + msg.getLogMsgID());
+                    logger.info("Renamed pending info file : " + oldPendInfFile.getName() + " :::: New name: "
+                            + newPendInfFile.getName() + msg.getLogMsgID());
                 }
 
             } catch (IOException iose) {
@@ -433,7 +466,8 @@ public class AS2Util {
      * @throws OpenAS2Exception - an internally handled error has occurred
      * @throws IOException      - the IO system has a problem
      */
-    public static void processMDN(AS2Message msg, byte[] data, OutputStream out, boolean isAsyncMDN, Session session, Class<?> sourceClass) throws OpenAS2Exception, IOException {
+    public static void processMDN(AS2Message msg, byte[] data, OutputStream out, boolean isAsyncMDN, Session session,
+            Class<?> sourceClass) throws OpenAS2Exception, IOException {
         Log logger = LogFactory.getLog(AS2Util.class.getSimpleName());
 
         // Create a MessageMDN and copy HTTP headers
@@ -451,7 +485,8 @@ public class AS2Util {
             part = new MimeBodyPart(mdn.getHeaders(), data);
             msg.getMDN().setData(part);
         } catch (MessagingException e1) {
-            msg.setLogMsg("Failed to create mimebodypart from received MDN data: " + org.openas2.logging.Log.getExceptionMsg(e1));
+            msg.setLogMsg("Failed to create mimebodypart from received MDN data: "
+                    + org.openas2.logging.Log.getExceptionMsg(e1));
             logger.error(msg, e1);
             if (isAsyncMDN) {
                 HTTPUtil.sendHTTPResponse(out, HttpURLConnection.HTTP_BAD_REQUEST, null);
@@ -475,7 +510,8 @@ public class AS2Util {
 
         msg.setStatus(Message.MSG_STATUS_MDN_VERIFY);
         if (logger.isTraceEnabled()) {
-            logger.trace("MDN parsed. \n    Payload file name: " + msg.getPayloadFilename() + "\n    Checking MDN report..." + msg.getLogMsgID());
+            logger.trace("MDN parsed. \n    Payload file name: " + msg.getPayloadFilename()
+                    + "\n    Checking MDN report..." + msg.getLogMsgID());
         }
         try {
             AS2Util.checkMDN(msg);
@@ -500,18 +536,27 @@ public class AS2Util {
             if (logger.isErrorEnabled()) {
                 logger.error("Disposition exception processing MDN ..." + msg.getLogMsgID(), de);
             }
+            
+            // 2023.09.21 #SVA Anyway save MDN
+            session.getProcessor().handle(StorageModule.DO_STOREMDN, msg, null);
+
             // Hmmmm... Error may require manual intervention but keep
             // trying.... possibly change retry count to 1 or just fail????
             AS2Util.resend(session, sourceClass, SenderModule.DO_SEND, msg, de, true, false);
+
             msg.setOption("STATE", Message.MSG_STATE_MSG_SENT_MDN_RECEIVED_ERROR);
             msg.trackMsgState(session);
+            
             return;
         } catch (OpenAS2Exception oae) {
             // Possibly MIC mismatch so resend
             if (isAsyncMDN) {
                 HTTPUtil.sendHTTPResponse(out, HttpURLConnection.HTTP_OK, null);
             }
-            OpenAS2Exception oae2 = new OpenAS2Exception("Message was sent but an error occured while receiving the MDN: " + org.openas2.logging.Log.getExceptionMsg(oae), oae);
+            OpenAS2Exception oae2 = new OpenAS2Exception(
+                    "Message was sent but an error occured while receiving the MDN: "
+                            + org.openas2.logging.Log.getExceptionMsg(oae),
+                    oae);
             oae2.addSource(OpenAS2Exception.SOURCE_MESSAGE, msg);
             oae2.log();
             AS2Util.resend(session, sourceClass, SenderModule.DO_SEND, msg, oae2, true, false);
@@ -523,9 +568,9 @@ public class AS2Util {
         msg.setOption("STATE", Message.MSG_STATE_MSG_SENT_MDN_RECEIVED_OK);
         msg.trackMsgState(session);
         if (logger.isTraceEnabled()) {
-            logger.trace("MDN processed. \n    Payload file name: " + msg.getPayloadFilename() + "\n    Persisting MDN report..." + msg.getLogMsgID());
+            logger.trace("MDN processed. \n    Payload file name: " + msg.getPayloadFilename()
+                    + "\n    Persisting MDN report..." + msg.getLogMsgID());
         }
-
         session.getProcessor().handle(StorageModule.DO_STOREMDN, msg, null);
         msg.setStatus(Message.MSG_STATUS_MSG_CLEANUP);
         // To support extended reporting via logging log info passing Message object
@@ -542,7 +587,8 @@ public class AS2Util {
      * @param msg - the Message object containing enough information to build the
      * pending info file name
      */
-    public static String buildPendingFileName(Message msg, Processor processor, String directoryIdentifier) throws OpenAS2Exception {
+    public static String buildPendingFileName(Message msg, Processor processor, String directoryIdentifier)
+            throws OpenAS2Exception {
         String msgId = msg.getMessageID(); // this includes enclosing angled brackets <>
         String dir = processor.getParameters().get(directoryIdentifier);
         if (msgId == null || msgId.length() < 1) {
@@ -592,7 +638,8 @@ public class AS2Util {
         try {
             getMetaData(msg, iFile);
         } catch (EOFException e) {
-            throw new OpenAS2Exception("Could not parse pending info file. Appears to be invalid: " + iFile.getAbsolutePath(), e);
+            throw new OpenAS2Exception(
+                    "Could not parse pending info file. Appears to be invalid: " + iFile.getAbsolutePath(), e);
         }
     }
 
@@ -602,7 +649,8 @@ public class AS2Util {
         try {
             pifois = new ObjectInputStream(new FileInputStream(inFile));
         } catch (IOException e) {
-            throw new OpenAS2Exception("Could not open pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
+            throw new OpenAS2Exception(
+                    "Could not open pending info file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
         }
 
         try {
@@ -626,12 +674,21 @@ public class AS2Util {
             msg.getAttributes().putAll((Map<String, String>) pifois.readObject());
 
             if (logger.isTraceEnabled()) {
-                logger.trace("Data retrieved from Pending info file:" + "\n        Original MIC: " + msg.getCalculatedMIC() + "\n        Retry Count: " + retries + "\n        Original file name : " + msg.getPayloadFilename() + "\n        Sent file name : " + msg.getAttribute(FileAttribute.MA_FILENAME) + "\n        Pending message file : " + msg.getAttribute(FileAttribute.MA_PENDINGFILE) + "\n        Error directory: " + msg.getAttribute(FileAttribute.MA_ERROR_DIR) + "\n        Sent directory: " + msg.getAttribute(FileAttribute.MA_SENT_DIR) + "\n        Attributes: " + msg.getAttributes() + msg.getLogMsgID());
+                logger.trace("Data retrieved from Pending info file:" + "\n        Original MIC: "
+                        + msg.getCalculatedMIC() + "\n        Retry Count: " + retries
+                        + "\n        Original file name : " + msg.getPayloadFilename() + "\n        Sent file name : "
+                        + msg.getAttribute(FileAttribute.MA_FILENAME) + "\n        Pending message file : "
+                        + msg.getAttribute(FileAttribute.MA_PENDINGFILE) + "\n        Error directory: "
+                        + msg.getAttribute(FileAttribute.MA_ERROR_DIR) + "\n        Sent directory: "
+                        + msg.getAttribute(FileAttribute.MA_SENT_DIR) + "\n        Attributes: " + msg.getAttributes()
+                        + msg.getLogMsgID());
             }
         } catch (IOException e) {
-            throw new OpenAS2Exception("Failed to retrieve the pending MDN information from file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
+            throw new OpenAS2Exception("Failed to retrieve the pending MDN information from file: "
+                    + org.openas2.logging.Log.getExceptionMsg(e), e);
         } catch (ClassNotFoundException e) {
-            throw new OpenAS2Exception("Failed to rebuild an object from the pending MDN information from file: " + org.openas2.logging.Log.getExceptionMsg(e), e);
+            throw new OpenAS2Exception("Failed to rebuild an object from the pending MDN information from file: "
+                    + org.openas2.logging.Log.getExceptionMsg(e), e);
         } finally {
             if (pifois != null) {
                 try {
@@ -656,7 +713,8 @@ public class AS2Util {
             File fPendingInfoFile = new File(pendingInfoFileName);
             if (fPendingInfoFile.exists()) {
                 if (logger.isTraceEnabled()) {
-                    logger.trace("Deleting pendinginfo file : " + fPendingInfoFile.getAbsolutePath() + msg.getLogMsgID());
+                    logger.trace(
+                            "Deleting pendinginfo file : " + fPendingInfoFile.getAbsolutePath() + msg.getLogMsgID());
                 }
 
                 try {
@@ -683,11 +741,13 @@ public class AS2Util {
                     logger.trace("deleted " + pendingFileName + ".object" + msg.getLogMsgID());
                 }
             } catch (Exception e) {
-                msg.setLogMsg("File was successfully sent but message object file not deleted: " + org.openas2.logging.Log.getExceptionMsg(e));
+                msg.setLogMsg("File was successfully sent but message object file not deleted: "
+                        + org.openas2.logging.Log.getExceptionMsg(e));
                 logger.warn(msg, e);
             }
             if (logger.isTraceEnabled()) {
-                logger.trace("Cleaning up pending file : " + fPendingFile.getName() + " from pending folder : " + fPendingFile.getParent() + msg.getLogMsgID());
+                logger.trace("Cleaning up pending file : " + fPendingFile.getName() + " from pending folder : "
+                        + fPendingFile.getParent() + msg.getLogMsgID());
             }
             try {
                 boolean isMoved = false;
@@ -707,7 +767,9 @@ public class AS2Util {
                     try {
                         String tgtFileName = fPendingFile.getName();
                         if (targetFilenameUnparsed != null && targetFilenameUnparsed.length() > 0) {
-                            CompositeParameters parser = new CompositeParameters(false).add("date", new DateParameters()).add("msg", new MessageParameters(msg)).add("rand", new RandomParameters());
+                            CompositeParameters parser = new CompositeParameters(false)
+                                    .add("date", new DateParameters()).add("msg", new MessageParameters(msg))
+                                    .add("rand", new RandomParameters());
                             tgtFileName = ParameterParser.parse(targetFilenameUnparsed, parser);
                         }
                         tgtFileName = IOUtil.cleanFilename(tgtFileName);
@@ -716,11 +778,13 @@ public class AS2Util {
                         isMoved = true;
 
                         if (logger.isInfoEnabled()) {
-                            logger.info("moved " + fPendingFile.getAbsolutePath() + " to " + tgtFile.getAbsolutePath() + msg.getLogMsgID());
+                            logger.info("moved " + fPendingFile.getAbsolutePath() + " to " + tgtFile.getAbsolutePath()
+                                    + msg.getLogMsgID());
                         }
 
                     } catch (IOException iose) {
-                        msg.setLogMsg("Error moving file to " + tgtDir + " : " + org.openas2.logging.Log.getExceptionMsg(iose));
+                        msg.setLogMsg("Error moving file to " + tgtDir + " : "
+                                + org.openas2.logging.Log.getExceptionMsg(iose));
                         logger.error(msg, iose);
                     }
                 }
@@ -794,7 +858,8 @@ public class AS2Util {
         if (maxRetryCntStr == null || maxRetryCntStr.length() < 1) {
             maxRetryCntStr = session.getProcessor().getParameters().get(MessageBuilderModule.PARAM_RESEND_MAX_RETRIES);
         }
-        int maxResendCount = (maxRetryCntStr != null && maxRetryCntStr.length() > 0)?Integer.parseInt(maxRetryCntStr):ResenderModule.DEFAULT_RETRIES;
+        int maxResendCount = (maxRetryCntStr != null && maxRetryCntStr.length() > 0) ? Integer.parseInt(maxRetryCntStr)
+                : ResenderModule.DEFAULT_RETRIES;
         return maxResendCount;
     }
 }

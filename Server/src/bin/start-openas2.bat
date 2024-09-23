@@ -34,6 +34,7 @@ rem  set EXTRA_PARMS=%EXTRA_PARMS% -DCmdProcessorSocketCipher=SSL_DH_anon_WITH_R
 
 rem Setup the Java Virtual Machine
 call "%OPENAS2_BASE_DIR%\bin\find_java.bat"
+pause
 if %ERRORLEVEL% NEQ 0 exit /B 1
 
 rem Using file globbing via * in classpath causes Mailcap loading issues so build full path
@@ -48,7 +49,8 @@ setLocal disableDelayedExpansion
 rem  Include the bin dir so that commons-logging.properties is found
 set CLASSPATH=.;%LIB_JARS%;%OPENAS2_BASE_DIR%/bin
 rem echo Running: "%JAVA%" %EXTRA_PARMS%  -cp .;%LIB_JARS% org.openas2.app.OpenAS2Server "%OPENAS2_BASE_DIR%/config/config.xml"
+echo Command: "%JAVA%" %EXTRA_PARMS%  -cp .;%LIB_JARS% org.openas2.app.OpenAS2Server "%OPENAS2_BASE_DIR%/config/config.xml"
 "%JAVA%" %EXTRA_PARMS%  -cp .;%LIB_JARS% org.openas2.app.OpenAS2Server "%OPENAS2_BASE_DIR%/config/config.xml"
-
+pause
 :warn
 :END

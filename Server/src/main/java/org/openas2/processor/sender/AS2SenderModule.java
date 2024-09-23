@@ -189,6 +189,7 @@ public class AS2SenderModule extends HttpSenderModule implements HasSchedule {
         httpOptions.put(HTTPUtil.PARAM_HTTP_PWD, msg.getPartnership().getAttribute(HTTPUtil.PARAM_HTTP_PWD));
         long maxSize = msg.getPartnership().getNoChunkedMaxSize();
         boolean preventChunking = msg.getPartnership().isPreventChunking(false);
+        //logger.info("******** preventChunking = " + (preventChunking ? "true" : "false"));
         ResponseWrapper resp = HTTPUtil.execRequest(HTTPUtil.Method.POST, url, ih, null, securedData.getInputStream(), httpOptions, maxSize, preventChunking);
         if (logger.isInfoEnabled()) {
             logger.info("Message sent and response received in " + resp.getTransferTimeMs() + msg.getLogMsgID());
@@ -606,6 +607,9 @@ public class AS2SenderModule extends HttpSenderModule implements HasSchedule {
             return;
         }
         DispositionOptions dispOptions = new DispositionOptions(mdnOptions);
+        includeHeaders = msg.getPartnership().isIncludeHeadersForMicCalc();
+        //logger.info("**** Calculate MIC whith Include Headers = " + (includeHeaders ? "true" : "false"));
+        //logger.info("**** MIC alg = " + dispOptions.getMicalg());
         msg.setCalculatedMIC(AS2Util.getCryptoHelper().calculateMIC(mbp, dispOptions.getMicalg(), includeHeaders, msg.getPartnership().isPreventCanonicalization()));
         if (logger.isTraceEnabled()) {
             // Generate some alternative MIC's to see if the partner is somehow using a

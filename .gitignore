@@ -16,3 +16,6 @@ pom.xml.versionsBackup
 **/.settings
 **/*.class
 .metadata/*
+.fake
+**/logs/
+*.jar

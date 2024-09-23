@@ -1,5 +1,7 @@
 package org.openas2.processor.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openas2.OpenAS2Exception;
 import org.openas2.WrappedException;
 import org.openas2.message.Message;
@@ -10,6 +12,7 @@ import org.openas2.params.InvalidParameterException;
 import org.openas2.params.MessageMDNParameters;
 import org.openas2.params.ParameterParser;
 import org.openas2.params.RandomParameters;
+import org.openas2.processor.sender.MDNSenderModule;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -20,6 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class MDNFileModule extends BaseStorageModule {
+
+    private Log logger = LogFactory.getLog(MDNFileModule.class.getSimpleName());
 
     public void handle(String action, Message msg, Map<String, Object> options) throws OpenAS2Exception {
         // store mdn data

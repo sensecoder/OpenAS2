@@ -16,9 +16,9 @@ public abstract class HttpSenderModule extends BaseSenderModule {
 
     public Map<String, String> getHttpOptions() throws OpenAS2Exception {
         Map<String, String> options = new HashMap<String, String>();
-        options.put(HTTPUtil.PARAM_READ_TIMEOUT, getParameter(PARAM_READ_TIMEOUT, "60000"));
-        options.put(HTTPUtil.PARAM_CONNECT_TIMEOUT, getParameter(PARAM_CONNECT_TIMEOUT, "60000"));
-        options.put(HTTPUtil.PARAM_SOCKET_TIMEOUT, getParameter(PARAM_SOCKET_TIMEOUT, "60000"));
+        options.put(HTTPUtil.PARAM_READ_TIMEOUT, getParameter(PARAM_READ_TIMEOUT, "500000"));
+        options.put(HTTPUtil.PARAM_CONNECT_TIMEOUT, getParameter(PARAM_CONNECT_TIMEOUT, "500000"));
+        options.put(HTTPUtil.PARAM_SOCKET_TIMEOUT, getParameter(PARAM_SOCKET_TIMEOUT, "500000"));
         return options;
     }
 }

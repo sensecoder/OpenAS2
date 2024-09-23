@@ -310,6 +310,8 @@ public class HTTPUtil {
      */
     public static ResponseWrapper execRequest(String method, String url, InternetHeaders headers, NameValuePair[] params, InputStream inputStream, Map<String, String> options, long noChunkMaxSize, boolean preventChunking) throws Exception {
 
+        //Log logger = LogFactory.getLog(HTTPUtil.class.getSimpleName());
+        
         HttpClientBuilder httpBuilder = HttpClientBuilder.create();
         //org.apache.http.protocol.RequestContent
         URL urlObj = new URL(url);
@@ -334,7 +336,12 @@ public class HTTPUtil {
         if (contentLengthValues != null && contentLengthValues.length > 0) {
             contentLength = Long.parseLong(contentLengthValues[0]);
             headers.removeHeader(HTTP.CONTENT_LEN);
+            //logger.info("******* Content len header is removed!");
         }
+        /*if (contentLengthValues == null) {
+            logger.info("******* Content len values is null!");
+        }*/
+
         RequestBuilder rb = getRequestBuilder(method, urlObj, params, headers);
         RequestConfig.Builder rcBuilder = buildRequestConfig(options);
         setProxyConfig(httpBuilder, rcBuilder, urlObj.getProtocol());
@@ -348,7 +355,7 @@ public class HTTPUtil {
             httpBuilder.setDefaultCredentialsProvider(credentialsProvider);
         }
         if (inputStream != null) {
-            AbstractHttpEntity httpEntity = new InputStreamEntity(inputStream, contentLength);
+            AbstractHttpEntity httpEntity = new InputStreamEntity(inputStream);
             // the default is to use chunking for transfer encoding - allow override
             if (preventChunking) {
                 if (noChunkMaxSize > 0L) {
@@ -362,8 +369,16 @@ public class HTTPUtil {
                         }
                         httpEntity = new ByteArrayEntity(bout.toByteArray(), null);
                     }
+                } else {
+                    //contentLength = IOUtils.toByteArray(inputStream).length;
+                    httpEntity = new ByteArrayEntity(IOUtils.toByteArray(inputStream));
                 }
                 // Tell the HTTP client to try to send unchunked - the Content-Length will be extracted from the entity
+                /*contentLength = httpEntity.getContentLength();
+                headers.setHeader(HTTP.CONTENT_LEN, "" + contentLength);
+                logger.info("******* Content len is : " + contentLength);
+                logger.info("******* Content len header is : " + headers.getHeader(HTTP.CONTENT_LEN));
+                */
                 httpEntity.setChunked(false);
             }
             // Use a BufferedEntity for BasicAuth connections to avoid the NonRepeatableRequestException

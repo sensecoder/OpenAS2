@@ -3,7 +3,6 @@ rem Purpose:  Find a version of Java to run
 rem Use a relatively simplistic but highly effective way by assuming the Java install is in the standard location
 rem Change the below env var if Java is in a different standard location
 set JavaBaseInstallFolder=%ProgramFiles%\Java
-
 rem Find Java Virtual Machine
 rem Remove any quotes around the JAVA env var if it already is set to avoid failures in the script
 if not "%JAVA%" == "" set JAVA=%JAVA:"=%
@@ -34,6 +33,7 @@ if %found_count% GTR 1 (
   echo Set JAVA_HOME to one of the above.
   exit /B 1
 )
+pause
 if %found_count% EQU 0 goto JavaNotFound
 echo Java install found: %java_list[1]%
 set JAVA_HOME=%java_list[1]%
@@ -42,7 +42,7 @@ set JAVA=%JAVA_HOME%\bin\java
 echo Set JAVA to: %JAVA%
 echo Set JAVA_HOME to: %JAVA_HOME%
 exit /B 0
-
+pause
 :JavaNotFound
 echo No Java install found in %JavaBaseInstallFolder%
 echo If you are using a 32-bit system you may want to change %ProgramFiles% to "%ProgramFiles(x86)%" and try again.

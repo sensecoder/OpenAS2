@@ -272,6 +272,11 @@ public class Partnership implements Serializable {
         return (preventCanonicalization != null && "true".equals(preventCanonicalization));
     }
 
+    public boolean isIncludeHeadersForMicCalc() {
+        String includeHeadersForMicCalc = getAttribute("include_headers_for_mic_calc");
+        return !(includeHeadersForMicCalc != null && "false".equals(includeHeadersForMicCalc));
+    }
+
     public boolean isRenameDigestToOldName() {
         String removeDash = getAttribute("rename_digest_to_old_name");
         return (removeDash != null && "true".equals(removeDash));
@@ -291,7 +296,9 @@ public class Partnership implements Serializable {
     }
 
     public boolean isPreventChunking(boolean defaultPreference) {
+        //boolean result = defaultPreference;
         String preventChunking = getAttribute(Partnership.PA_HTTP_PREVENT_CHUNKING);
+
         return preventChunking == null?defaultPreference:"true".equalsIgnoreCase(preventChunking);
     }
 }
